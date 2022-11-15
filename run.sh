@@ -23,7 +23,10 @@ run()
 {
     python demo.py --config config/vox-256.yaml \
         --checkpoint checkpoints/vox.pth.tar --source_image $1 \
-        --driving_video $2 --find_best_frame --result_video $1_$(date +%s).mp4
+        --driving_video $2 --find_best_frame --result_video $1_ts_$(date +%s).mp4
+    python demo.py --mode avd --config config/vox-256.yaml \
+        --checkpoint checkpoints/vox.pth.tar --source_image $1 \
+        --driving_video $2 --find_best_frame --result_video $1_ts_avd_$(date +%s).mp4
 }
 
 if [[ -z "$inputfile1" ]]; then
