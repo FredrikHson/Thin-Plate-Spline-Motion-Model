@@ -47,20 +47,20 @@ def load_checkpoints(config_path, checkpoint_path, device):
     dense_motion_network.to(device)
     inpainting.to(device)
     avd_network.to(device)
-       
+
     checkpoint = torch.load(checkpoint_path, map_location=device)
- 
+
     inpainting.load_state_dict(checkpoint['inpainting_network'])
     kp_detector.load_state_dict(checkpoint['kp_detector'])
     dense_motion_network.load_state_dict(checkpoint['dense_motion_network'])
     if 'avd_network' in checkpoint:
         avd_network.load_state_dict(checkpoint['avd_network'])
-    
+
     inpainting.eval()
     kp_detector.eval()
     dense_motion_network.eval()
     avd_network.eval()
-    
+
     return inpainting, kp_detector, dense_motion_network, avd_network
 
 
@@ -86,7 +86,7 @@ def make_animation(source_image, driving_video, inpainting_network, kp_detector,
             elif mode == 'avd':
                 kp_norm = avd_network(kp_source, kp_driving)
             dense_motion = dense_motion_network(source_image=source, kp_driving=kp_norm,
-                                                    kp_source=kp_source, bg_param = None, 
+                                                    kp_source=kp_source, bg_param = None,
                                                     dropout_flag = False)
             out = inpainting_network(source, dense_motion)
 
@@ -131,13 +131,13 @@ if __name__ == "__main__":
     parser.add_argument("--source_image", default='./assets/source.png', help="path to source image")
     parser.add_argument("--driving_video", default='./assets/driving.mp4', help="path to driving video")
     parser.add_argument("--result_video", default='./result.mp4', help="path to output")
-    
+
     parser.add_argument("--img_shape", default="256,256", type=lambda x: list(map(int, x.split(','))),
                         help='Shape of image, that the model was trained on.')
-    
+
     parser.add_argument("--mode", default='relative', choices=['standard', 'relative', 'avd'], help="Animate mode: ['standard', 'relative', 'avd'], when use the relative mode to animate a face, use '--find_best_frame' can get better quality result")
-    
-    parser.add_argument("--find_best_frame", dest="find_best_frame", action="store_true", 
+
+    parser.add_argument("--find_best_frame", dest="find_best_frame", action="store_true",
                         help="Generate from the frame that is the most alligned with source. (Only for faces, requires face_aligment lib)")
 
     parser.add_argument("--cpu", dest="cpu", action="store_true", help="cpu mode.")
@@ -154,16 +154,16 @@ if __name__ == "__main__":
     except RuntimeError:
         pass
     reader.close()
-    
+
     if opt.cpu:
         device = torch.device('cpu')
     else:
         device = torch.device('cuda')
-    
+
     source_image = resize(source_image, opt.img_shape)[..., :3]
     driving_video = [resize(frame, opt.img_shape)[..., :3] for frame in driving_video]
     inpainting, kp_detector, dense_motion_network, avd_network = load_checkpoints(config_path = opt.config, checkpoint_path = opt.checkpoint, device = device)
- 
+
     if opt.find_best_frame:
         i = find_best_frame(source_image, driving_video, opt.cpu)
         print ("Best frame: " + str(i))
@@ -174,6 +174,6 @@ if __name__ == "__main__":
         predictions = predictions_backward[::-1] + predictions_forward[1:]
     else:
         predictions = make_animation(source_image, driving_video, inpainting, kp_detector, dense_motion_network, avd_network, device = device, mode = opt.mode)
-    
-    imageio.mimsave(opt.result_video, [img_as_ubyte(frame) for frame in predictions], fps=fps)
+
+    imageio.mimsave(opt.result_video, [img_as_ubyte(frame) for frame in predictions], fps=fps,quality=10)
 
